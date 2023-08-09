@@ -1,0 +1,87 @@
+---
+title: "Long read head 2 head"
+author: "Sam Lipworth"
+date: "2023-07-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+
+
+## Introduction
+
+Comparison between MVP and Omega biotech extraction kits
+
+```{r read stats,echo=FALSE, warning=FALSE, message=FALSE}
+stats<-read_tsv('./all_stats.tsv')
+stats$file<-str_replace_all(stats$file,'.fastq.gz','')
+stats$kit<-ifelse(grepl('OB',stats$file),'Omega Biotech','MVP')
+ggplot(stats) +
+  aes(x=kit,y=sum_len) + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_boxplot() +geom_jitter() +
+  ggtitle("Total output")
+
+ggplot(stats) +
+  aes(x=kit,y=N50) + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_boxplot() +geom_jitter() +
+  ggtitle("N50 of reads")
+
+ggplot(stats) +
+  aes(x=kit,y=avg_len) + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_boxplot() +geom_jitter() +
+  ggtitle("Average read length")
+
+ggplot(stats) +
+  aes(x=kit,y=max_len) + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_boxplot() +geom_jitter() +
+  ggtitle("max length")
+
+ggplot(stats) +
+  aes(x=kit,y=`Q30(%)`) + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_boxplot() +geom_jitter() +
+  ggtitle("%Q30")
+
+
+
+```
+
+### Thoughts
+
+WHen the MVP kit works it works very well (better than OB), but it is very inconsistent for some reason. OB is a bit worse but much more consistent.
+
+## Assemblies
+
+Assemblies created using Unicycler with --mode bold
+
+```{r assemblies, echo=FALSE, warning=FALSE, message=FALSE}
+
+hybrid_stats<-read_tsv('./hybrid_stats.tsv', col_names = c("Isolate","total_contigs","complete_contigs"))
+hybrid_stats<-filter(hybrid_stats,!grepl('sub',Isolate))
+
+hybrid_stats$Isolate<-str_replace_all(hybrid_stats$Isolate,'_.*','')
+hybrid_stats$kit<-ifelse(grepl('OB',hybrid_stats$Isolate),'OB','MVP')
+hybrid_stats$Isolate<-str_replace_all(hybrid_stats$Isolate,'MVP','')
+hybrid_stats$Isolate<-str_replace_all(hybrid_stats$Isolate,'OB','')
+
+
+hybrid_stats$diff<-hybrid_stats$total_contigs - hybrid_stats$complete_contigs
+hybrid_stats$complete<-ifelse(hybrid_stats$total_contigs==hybrid_stats$complete_contigs,'complete assembly','incomplete assembly')
+t<-table(hybrid_stats$complete,hybrid_stats$kit)
+
+
+kableExtra::kable(t,caption = "Complete assemblies by kit",format = "html") %>% 
+   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+kableExtra::kable(hybrid_stats,format = "html") %>%  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
